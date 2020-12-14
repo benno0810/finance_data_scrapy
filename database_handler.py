@@ -27,16 +27,16 @@ class ProxyPool_DB(DB):
         super().__init__(db_type,db_address,db_name,table_name)
         self.client = pymongo.MongoClient(self.db_address)
         self.db=self.client[self.db_name]
-        col=self.db[self.table_name]
-        collist=self.db.list_collection_names()
-        if self.table_name in collist:
-            print('集合已存在')
+        self.col=self.db[self.table_name]
+        self.collist=self.db.list_collection_names()
+        if self.table_name in self.collist:
+            print('集合已存在,集合名{}'.format(self.table_name))
         else:               
             line={
                 'ip_address':'127.0.0.1:30300',
                 'expires_time': time.time()
             }
-            x=col.insert_one(line)
+            x=self.col.insert_one(line)
             print(x)
     
 
@@ -46,18 +46,15 @@ class ProxyPool_DB(DB):
 
     def insert_one(self,line:dict):
         super().insert_one()
-        col=self.db[self.table_name]
         if self.test_connection() and line.get('ip_address'):
             if not line.get('expires_time'):
                 #若没有过期时间戳则设置过期时间戳为180秒+
                 line['expires_time']=time.time()+180
-            col=self.db[self.table_name]
-            x=col.insert_one(line)
+            x=self.col.insert_one(line)
             print(x)
 
     def delete_many(self,myquery:dict):
-        col=self.db[self.table_name]
-        x = col.delete_many(myquery)
+        x = self.col.delete_many(myquery)
         print(x.deleted_count, "个文档已删除")
 
 
@@ -65,8 +62,7 @@ class ProxyPool_DB(DB):
         super().delete_one()
     
     def find_many(self,myquery:dict):
-        col=self.db[self.table_name]
-        x=col.find(myquery)
+        x=self.col.find(myquery)
         return x
 
 
@@ -84,8 +80,10 @@ if __name__=='__main__':
         'ip_address':'127.0.0.1:30031'
     }
     myquery2={}
-    x=list(db_test.find_many(myquery2))
+    #=list(db_test.find_many(myquery2))
+    x=db_test.col.estimated_document_count()
     print(x)
+
 
 
         
