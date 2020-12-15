@@ -118,11 +118,15 @@ class IceUsersItem(scrapy.Item):
         auther_id=posting['user']['id']
         
     """
-    auther_type=scrapy.Field()
-    auther_info=scrapy.Field()
     auther_id=scrapy.Field()
     auther_name=scrapy.Field()
-
+    auther_type=scrapy.Field()
+    auther_info=scrapy.Field()
+    
+    
+class IceResultMapperItem(scrapy.Item):
+    keyword=scrapy.Field(output_processor=TakeFirst())
+    posting_id=scrapy.Field(output_processor=TakeFirst())
 
 
 class CNInfoItem(scrapy.Item):

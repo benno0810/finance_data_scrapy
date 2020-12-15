@@ -70,7 +70,9 @@ ROBOTSTXT_OBEY = False
 ITEM_PIPELINES = {
    #'finance.pipelines.MysqlTwistedPipline': 400,
    #'finance.pipelines.PDFDownloadPipeline': 400,
-   'finance.pipelines.MyJsonPipeline':400,
+   'finance.pipelines.DuplicatesPipeline':400,
+   'finance.pipelines.MongoPipeline':490,
+   #'finance.pipelines.MyJsonPipeline':500,
     
 
 }
@@ -99,7 +101,7 @@ FILES_STORE = os.path.join(CURRENT_DIR, 'pdfs')
 # HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
 # MYSQL SETTINGS
-MYSQL_HOST = "120.78.163.237"
+MYSQL_HOST = "127.0.0.1：3306"
 MYSQL_DBNAME = "finance"
 MYSQL_USER = "root"
 MYSQL_PASSWORD = "123456"
@@ -107,3 +109,8 @@ MYSQL_PASSWORD = "123456"
 SQL_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 SQL_DATE_FORMAT = "%Y-%m-%d"
 HTTPERROR_ALLOWED_CODES = [400]
+
+#MONGODB SETTINGS
+MONGO_HOST = "127.0.0.1:27017"
+MONGO_DBNAME = "finance"
+

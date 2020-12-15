@@ -4,6 +4,7 @@ import sys
 import os
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+#sys.path.append(r'C:\Users\benno\OneDrive\Documents\GitHub\xueqiu_data_scrapy\Finance\finance')
 import scrapy
 import json
 import time
@@ -12,16 +13,19 @@ import re
 import urllib
 from scrapy.http import Request
 from scrapy.http.cookies import CookieJar 
-from ..items import IceItem,IcePostingsItem,IceUsersItem
+
+#from  items import IceItem,IcePostingsItem,IceUsersItem,IceResultMapperItem
+from ..items import IceItem,IcePostingsItem,IceUsersItem,IceResultMapperItem
 from scrapy.loader import ItemLoader
 from urllib.parse import quote,unquote
 import logging
+
 class XueqiupostingsSpider(scrapy.Spider):
     """
     雪球投资网搜索结果解析
     https://xueqiu.com/
     """
-    name = 'xueqiupostings'
+    name = 'xueqiu_postings'
     # allowed domains
     # allowed_domains = ['http://xueqiu.com/']
     custom_settings = {
@@ -128,6 +132,7 @@ class XueqiupostingsSpider(scrapy.Spider):
         'https://xueqiu.com/query/v1/search/status?sort=time&source=all&q=白银合约期货&count=20&page=1',
     ]
     '''
+    
     def start_requests(self):
         """
         此网站首先访问首页， 获得有效cookies
@@ -156,32 +161,36 @@ class XueqiupostingsSpider(scrapy.Spider):
     def parse(self, response):
 
         """
-        此网站全为异步加载，使用json数据格式
+        crawl from a json-api 
         1. generate search_result urls for every query_string
         2. get next page url for every query_string
+        request exceed maxCount or maxPage will raise error with errorcode 501 and status code 200, which is the same as 
+        crowd control mechanism
+
         :param response:
         :return:
         """
         #current_page=1
-        maxCount=10
-        maxPage=100
+        maxCount=20
+        maxPage=5
 
         js = json.loads(response.body.decode('utf-8'))
         request_send_flag=False
-        #有时候返回内容会是错误501， 此时无脑重试
+
         if js.get('count'):
+            #proceed to next page
+            
             total_count = js['count']
             current_page=js['page']
+            maxCount=len(js['list'])
             total_page = min(math.ceil(total_count/maxCount),maxPage)
             for items in self.parse_detail(response,js):
                 yield items
             next_page= current_page+1
             if next_page<=total_page:
                  request_send_flag=True
-            else: 
-                request_send_flag=False
-
         else:
+            #retry
             pattern=re.compile('page=([0-9]{1,})')
             current_page=re.findall(pattern,response.url)[0]
             next_page=current_page
@@ -195,24 +204,37 @@ class XueqiupostingsSpider(scrapy.Spider):
             decoded_url=unquote(response.url)
             keyword=re.findall(pattern,decoded_url)
             self.cookie_jar.extract_cookies(response, response.request)
-            #access_token=(self.cookie_jar._cookies['.xueqiu.com']['/']['xq_a_token']).value
-            #query='access_token='
+            #access_token maybe expired for large page-result( it's initialized when page==1)
             self.logger.info('关键字{}, 第{}页'.format(keyword,current_page))
             print('关键字{}, 第{}页'.format(keyword,current_page))
             yield Request(url=next_url, callback=self.parse, dont_filter=True)
         
 
-    
+    # it is not economical at all, a very large respons is returned, but it is necessary to return once a posting because possible duplicates
     def parse_detail(self,response,postings):
+        pattern=re.compile('q=([\u4e00-\u9fa5_a-zA-Z0-9]{0,})')
+        decoded_url=unquote(response.url)
+        keyword=re.findall(pattern,decoded_url)
+        
         for posting in postings['list']:
             item_posting =ItemLoader(item=IcePostingsItem(),response=response)
             item_user=ItemLoader(item=IceUsersItem(),response=response)
-            
+            item_result_mapper=ItemLoader(item=IceResultMapperItem(),response=response)
+
+
+            yield self.map_query_result(posting,keyword,item_result_mapper)
             yield self.parse_user_info(posting,item_user)
-            
             yield self.parse_posting_info(posting,item_posting)
 
 
+    def map_query_result(self,posting,keyword,item):
+        posting_id=posting['target'].replace('/',"_")
+        item.add_value('keyword',keyword)
+        item.add_value('posting_id',posting_id)
+        return item.load_item()
+
+
+        
     def parse_user_info(self,posting,item):
         """方法，获取文章作者信息，被parse_postings()调用
 
@@ -223,18 +245,15 @@ class XueqiupostingsSpider(scrapy.Spider):
         Returns:
             bool: true: 正确更新作者信息 false 未对本作者进行更新
         """
-        # global user_id_list
-        # 进一步的，进入用户主页获取更详细用户信息
         pattern_stock=re.compile(r'^/S.*')     
         if posting['user']['id']<0:
             search_result=pattern_stock.search(posting['user']['profile'])
-            self.logger.info()
             if search_result:
                 print('股票,股票名{}'.format(posting['user']['screen_name']))
                 self.logger.info('股票,股票名{}'.format(posting['user']['screen_name']))
                 item.add_value('auther_type',1)
             else:
-                print('被封禁的雪球用户')
+                print('被关闭的雪球用户')
                 self.logger.info('被封禁的雪球用户')
                 item.add_value('auther_type',2)
         else:
@@ -246,9 +265,10 @@ class XueqiupostingsSpider(scrapy.Spider):
         auther_info=posting['user']
         auther_name=posting['user']['screen_name']
         auther_id=posting['user']['id']
-        item.add_value('auther_info',auther_info)
         item.add_value('auther_name',auther_name)
         item.add_value('auther_id',auther_id)
+        item.add_value('auther_info',auther_info)
+
         return item.load_item()
 
 
@@ -276,20 +296,3 @@ class XueqiupostingsSpider(scrapy.Spider):
         item.add_value('created_at',posting['created_at'])
         item.add_value('text',posting['text'])
         return item.load_item()
-
-
-'''
-    def parse_detail(self, response):
-
-        item = ItemLoader(item=IceItem(), response=response)
-
-        title = response.meta.get('title')
-        create_time = response.meta.get('create_time')
-        item.add_value('title', title)
-        item.add_value('create_time', create_time)
-        item.add_css('author_name', '.avatar__name a::attr(data-screenname)')
-        content = "".join(
-            list(response.css('.article__bd__detail p::text,.article__bd__detail img::attr(src)').extract()))
-        item.add_value('content', content)
-        return item.load_item()
-'''
