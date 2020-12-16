@@ -170,20 +170,21 @@ class XueqiupostingsSpider(scrapy.Spider):
         :param response:
         :return:
         """
-        #current_page=1
+        maxPage=99
         maxCount=20
-        maxPage=5
-
         js = json.loads(response.body.decode('utf-8'))
+        #print(js)
         request_send_flag=False
 
-        if js.get('count'):
+        if js.get('code')!=501 and js.get('count') and js.get('count') !=0:
             #proceed to next page
             
             total_count = js['count']
             current_page=js['page']
-            maxCount=len(js['list'])
-            total_page = min(math.ceil(total_count/maxCount),maxPage)
+            #to avoid the last page when size of the list is cut to the actuall size of the data
+            maxCount=js['size']
+            maxPage=js['maxPage']-1
+            total_page = maxPage
             for items in self.parse_detail(response,js):
                 yield items
             next_page= current_page+1

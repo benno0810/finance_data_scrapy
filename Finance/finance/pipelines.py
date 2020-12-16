@@ -42,7 +42,6 @@ class DuplicatesPipeline(object):
     DropItem i is WARNING level log
     '''
     def __init__(self):
-        print('init again!')
         self.posting_id_seen = set()
         self.user_id_seen=set()
         self.query_result_mapper_seen=set()
@@ -61,7 +60,6 @@ class DuplicatesPipeline(object):
                 if adapter['auther_id'][0] in self.user_id_seen:
                     raise DropItem(f"Duplicate auther found: {item!r}")
                 else:
-                    print('start to append!')
                     self.user_id_seen.add(adapter['auther_id'][0])
                     return item 
             if isinstance(item,IceResultMapperItem):
@@ -136,15 +134,13 @@ class MyJsonPipeline(object):
             if isinstance(item,IceItem):
                 item_json = json.dumps(dict(item), ensure_ascii=False) + '\n'
                 self.xueqiu_file.write(item_json)
-                return item
             if isinstance(item,IcePostingsItem):
                 item_json = json.dumps(dict(item), ensure_ascii=False) + '\n'
                 self.xueqiu_postings_file.write(item_json)
-                return item
             if isinstance(item,IceUsersItem):
                 item_json = json.dumps(dict(item), ensure_ascii=False) + '\n'
                 self.xueqiu_users_file.write(item_json)
-                return item
+            return item
                 
 
     def close_spider(self, spider):
@@ -183,10 +179,8 @@ class MongoPipeline(object):
                 collection_name = 'xueqiu_postings'
                 #user update insted of insert, warning:init insert needed
                 #self.db[collection_name].insert_one(ItemAdapter(item).asdict())
-                print(ItemAdapter(item).asdict())
                 result=self.db[collection_name].update(ItemAdapter(item).asdict(),ItemAdapter(item).asdict(),upsert=True)
-                print(result)
-                return item
+            return item
     '''
     def handle_error(self, failure, item, spider):
         print(failure)

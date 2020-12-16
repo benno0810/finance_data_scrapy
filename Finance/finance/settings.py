@@ -72,7 +72,7 @@ ITEM_PIPELINES = {
    #'finance.pipelines.PDFDownloadPipeline': 400,
    'finance.pipelines.DuplicatesPipeline':400,
    'finance.pipelines.MongoPipeline':490,
-   #'finance.pipelines.MyJsonPipeline':500,
+   'finance.pipelines.MyJsonPipeline':500,
     
 
 }
