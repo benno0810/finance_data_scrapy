@@ -128,6 +128,20 @@ class IceResultMapperItem(scrapy.Item):
     keyword=scrapy.Field(output_processor=TakeFirst())
     posting_id=scrapy.Field(output_processor=TakeFirst())
 
+class IcePortfolioItem(scrapy.Item):
+    '''
+        name = portfolio['name']
+        updated_at= portfolio['updated_at'] if portfolio['updated_at'] else portfolio['created_at']
+        market = portfolio['market']
+        info=portfolio
+    '''
+    name=scrapy.Field(output_processor=TakeFirst())
+    portfolio_screen_name= scrapy.Field(output_processor=TakeFirst())
+    owner_id = scrapy.Field(output_processor=TakeFirst())
+    updated_at=scrapy.Field(output_processor=TakeFirst())
+    market=scrapy.Field(output_processor=TakeFirst())
+    info=scrapy.Field(output_processor=TakeFirst())
+
 
 class CNInfoItem(scrapy.Item):
     site = scrapy.Field()

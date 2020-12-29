@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
-
+import re
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # Scrapy settings for finance project
 #
@@ -48,15 +48,18 @@ ROBOTSTXT_OBEY = False
 
 # Enable or disable spider middlewares
 # See https://doc.scrapy.org/en/latest/topics/spider-middleware.html
-# SPIDER_MIDDLEWARES = {
+#SPIDER_MIDDLEWARES = {
 #    'finance.middlewares.FinanceSpiderMiddleware': 543,
+
 # }
 
 # Enable or disable downloader middlewares
 # See https://doc.scrapy.org/en/latest/topics/downloader-middleware.html
-# DOWNLOADER_MIDDLEWARES = {
+DOWNLOADER_MIDDLEWARES = {
 #    'finance.middlewares.FinanceDownloaderMiddleware': 543,
-# }
+#      'finance.middlewares.FinanceRetryMiddleware':543,
+#      'scrapy.downloadermiddlewares.retry.RetryMiddleware':None
+}
 
 # Enable or disable extensions
 # See https://doc.scrapy.org/en/latest/topics/extensions.html
@@ -73,6 +76,7 @@ ITEM_PIPELINES = {
    'finance.pipelines.DuplicatesPipeline':400,
    'finance.pipelines.MongoPipeline':490,
    'finance.pipelines.MyJsonPipeline':500,
+   
     
 
 }
@@ -113,4 +117,15 @@ HTTPERROR_ALLOWED_CODES = [400]
 #MONGODB SETTINGS
 MONGO_HOST = "127.0.0.1:27017"
 MONGO_DBNAME = "finance"
+
+#PROXYPOOL_SETTINGS
+POOLTYPE="MongoDB"
+POOL_HOST="127.0.0.1:27017"
+POOL_DBNAME="proxy_pool"
+
+#PROXY_POOL_PAGE_RETRY_TIMES=5
+PROXY_POOL_TRY_WITH_HOST = False #default True
+
+
+BANNED_PATTERN=re.compile(r'(遇到错误|重新登录帐号|刷新页面)')
 

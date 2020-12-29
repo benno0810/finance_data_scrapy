@@ -64,6 +64,10 @@ class ProxyPool_DB(DB):
     def find_many(self,myquery:dict):
         x=self.col.find(myquery)
         return x
+    
+    def aggregate(self,myquery:list):
+        x=self.col.aggregate(myquery)
+        return x
 
 
 

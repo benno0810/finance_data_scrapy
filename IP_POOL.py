@@ -79,7 +79,7 @@ class IP():
 		print(address)
 		return address
 
-	async def run_pool_append(self,interval=20,max_expires_time=600):# 并发DB IO
+	async def run_pool_append(self,interval=25,max_expires_time=600):# 并发DB IO
 		pool_size=2*max_expires_time/interval
 		while True:
 			proxy_pool_headers={
@@ -139,8 +139,11 @@ class Tester():
 				proxy_pool=json.load(f)
 			proxy_list=list(proxy_pool.keys())
 			'''
-			proxy_list=list(self.DB.find_many({}).limit(interval))  #此步如何做并发， 需要实现随机取数功能， 否则容易重复验证
+			#proxy_list=list(self.DB.find_many({}).limit(interval))  #此步如何做并发， 需要实现随机取数功能， 否则容易重复验证
+			proxy_list = list(self.DB.aggregate([{'$sample': {'size':interval}}]))
+			print(proxy_list)
 			pool_size=len(proxy_list)
+			if pool_size<=0: break
 			for i in range(pool_size):
 				await asyncio.sleep(interval)
 				address=proxy_list[i]['ip_address']

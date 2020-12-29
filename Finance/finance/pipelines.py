@@ -9,7 +9,7 @@ import pymysql
 import pymongo
 from scrapy.pipelines.files import FilesPipeline
 from twisted.enterprise import adbapi
-from .items import IceItem,IcePostingsItem,IceUsersItem,IceResultMapperItem
+from .items import IceItem,IcePostingsItem,IceUsersItem,IceResultMapperItem,IcePortfolioItem
 import os
 import json
 import scrapy
@@ -45,6 +45,7 @@ class DuplicatesPipeline(object):
         self.posting_id_seen = set()
         self.user_id_seen=set()
         self.query_result_mapper_seen=set()
+        self.portfolio_seen=dict()    #{portfolio_name:update_time}
 
     def process_item(self, item, spider):
         if spider.name=='xueqiu_postings':
@@ -71,7 +72,22 @@ class DuplicatesPipeline(object):
                     raise DropItem(f"Duplicate mapper found: {item!r}")
                 else:
                     self.query_result_mapper_seen.add(mapper)
-
+                    return item
+        if spider.name=='xueqiu_portfolios':
+            if isinstance(item,IcePortfolioItem):
+                adapter = ItemAdapter(item)
+                if adapter['name'] in self.portfolio_seen.keys():
+                    name=adapter['name']
+                    if adapter['updated_at']==self.portfolio_seen[name]:
+                        raise DropItem(f"Duplicate portfolio found: {item!r}")
+                    else:
+                        #archive_file found, update update_time
+                        self.portfolio_seen[name]=adapter['name']
+                        return item
+                else:
+                    #find new portfolio, add to the seen_dict
+                    name=adapter['name']
+                    self.portfolio_seen[name]=adapter['updated_at']
                     return item
 
 class MysqlTwistedPipline(object):
@@ -180,6 +196,12 @@ class MongoPipeline(object):
                 #user update insted of insert, warning:init insert needed
                 #self.db[collection_name].insert_one(ItemAdapter(item).asdict())
                 result=self.db[collection_name].update(ItemAdapter(item).asdict(),ItemAdapter(item).asdict(),upsert=True)
+            return item
+        if spider.name=='xueqiu_portfolios':
+            if isinstance(item,IcePortfolioItem):
+                collection_name='xueqiu_portfolios'
+                adapter=ItemAdapter(item)
+                result=self.db[collection_name].update_many({'name':adapter['name']},{'$set':ItemAdapter(item).asdict()},upsert=True)
             return item
     '''
     def handle_error(self, failure, item, spider):

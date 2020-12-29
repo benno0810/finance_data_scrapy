@@ -2,6 +2,7 @@
 __author__ = 'neuclil'
 
 import hashlib
+import json
 from datetime import date, datetime
 
 
@@ -26,3 +27,10 @@ def comparetime(nowtime, stringtime):
 
     result = nowtime - stringtime
     return result.days
+
+def is_json(text):
+    try:
+        json.loads(text)
+    except:
+        return False
+    return True

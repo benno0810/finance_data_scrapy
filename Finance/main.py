@@ -8,4 +8,4 @@ import os
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # execute(["scrapy", "crawl", "sz_stock_exchange"])
-execute(["scrapy", "crawl", "xueqiu_postings"])
+execute(["scrapy", "crawl", "xueqiu"])
